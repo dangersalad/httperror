@@ -1,3 +1,5 @@
+// Package httperror contains a struct type to represent an HTTP
+// status error for developing http servers
 package httperror
 
 import (
@@ -6,13 +8,20 @@ import (
 	"net/http"
 )
 
+// HTTPError is a struct type representing an http error response
 type HTTPError struct {
 	error
-	Code    int    `json:"code"`
-	Status  string `json:"status"`
+	// The HTTP status code
+	Code int `json:"code"`
+	// The status string for the code
+	Status string `json:"status"`
+	// The error message
 	Message string `json:"message"`
 }
 
+// New makes a new error given the code. The Status property is set
+// from `http.StatusText()` and the remaining arguments are passed to
+// `fmt.Sprintf`
 func New(code int, messageArgs ...interface{}) *HTTPError {
 	var message string
 	var err error
@@ -28,121 +37,30 @@ func New(code int, messageArgs ...interface{}) *HTTPError {
 	return &HTTPError{err, code, status, message}
 }
 
+// IsHTTPError returns true if the provided error is an HTTPError
 func IsHTTPError(err error) bool {
 	_, ok := err.(HTTPError)
+	if !ok {
+		_, ok := err.(*HTTPError)
+		return ok
+	}
 	return ok
 }
 
+// Error returns the string representation of this error
 func (err HTTPError) Error() string {
-	return fmt.Sprintf("[%d] %s: %s", err.Code, err.Status, err.Message)
+	if err.Status == err.Message {
+		return fmt.Sprintf("[%d] %s", err.Code, err.Status)
+	} else {
+		return fmt.Sprintf("[%d] %s: %s", err.Code, err.Status, err.Message)
+	}
 }
 
+// Respond uses the supplied `http.ResponseWriter` to set the
+// approprate headers and a json encoded representation of the
+// HTTPError for the body
 func (err *HTTPError) Respond(res http.ResponseWriter) {
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(err.Code)
 	json.NewEncoder(res).Encode(err)
-}
-
-// Convenience methods for 400 errors
-
-func BadRequest(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusBadRequest, messageArgs...)
-}
-
-func Unauthorized(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusUnauthorized, messageArgs...)
-}
-
-func PaymentRequired(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusPaymentRequired, messageArgs...)
-}
-
-func Forbidden(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusForbidden, messageArgs...)
-}
-
-func NotFound(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusNotFound, messageArgs...)
-}
-
-func MethodNotAllowed(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusMethodNotAllowed, messageArgs...)
-}
-
-func NotAcceptable(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusNotAcceptable, messageArgs...)
-}
-
-func ProxyAuthRequired(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusProxyAuthRequired, messageArgs...)
-}
-
-func RequestTimeout(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusRequestTimeout, messageArgs...)
-}
-
-func Conflict(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusConflict, messageArgs...)
-}
-
-func Gone(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusGone, messageArgs...)
-}
-
-func LengthRequired(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusLengthRequired, messageArgs...)
-}
-
-func PreconditionFailed(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusPreconditionFailed, messageArgs...)
-}
-
-func RequestEntityTooLarge(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusRequestEntityTooLarge, messageArgs...)
-}
-
-func RequestURITooLong(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusRequestURITooLong, messageArgs...)
-}
-
-func UnsupportedMediaType(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusUnsupportedMediaType, messageArgs...)
-}
-
-func RequestedRangeNotSatisfiable(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusRequestedRangeNotSatisfiable, messageArgs...)
-}
-
-func ExpectationFailed(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusExpectationFailed, messageArgs...)
-}
-
-func Teapot(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusTeapot, messageArgs...)
-}
-
-// Convenience methods for 500 errors
-
-func InternalServerError(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusInternalServerError, messageArgs...)
-}
-
-func NotImplemented(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusNotImplemented, messageArgs...)
-}
-
-func BadGateway(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusBadGateway, messageArgs...)
-}
-
-func ServiceUnavailable(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusServiceUnavailable, messageArgs...)
-}
-
-func GatewayTimeout(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusGatewayTimeout, messageArgs...)
-}
-
-func HTTPVersionNotSupported(messageArgs ...interface{}) *HTTPError {
-	return New(http.StatusHTTPVersionNotSupported, messageArgs...)
 }
