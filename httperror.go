@@ -13,12 +13,6 @@ type HTTPError struct {
 	Message string `json:"message"`
 }
 
-func (err *HTTPError) Respond(res http.ResponseWriter) {
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(err.Code)
-	json.NewEncoder(res).Encode(err)
-}
-
 func New(code int, messageArgs ...interface{}) *HTTPError {
 	var message string
 	var err error
@@ -32,6 +26,21 @@ func New(code int, messageArgs ...interface{}) *HTTPError {
 		err = fmt.Errorf("[%d] %s - %s", code, status, message)
 	}
 	return &HTTPError{err, code, status, message}
+}
+
+func IsHTTPError(err error) bool {
+	_, ok := err.(HTTPError)
+	return ok
+}
+
+func (err HTTPError) Error() string {
+	return fmt.Sprintf("[%d] %s: %s", err.Code, err.Status, err.Message)
+}
+
+func (err *HTTPError) Respond(res http.ResponseWriter) {
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(err.Code)
+	json.NewEncoder(res).Encode(err)
 }
 
 // Convenience methods for 400 errors
