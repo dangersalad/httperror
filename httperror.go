@@ -10,7 +10,6 @@ import (
 
 // HTTPError is a struct type representing an http error response
 type HTTPError struct {
-	error
 	// The HTTP status code
 	Code int `json:"code"`
 	// The status string for the code
@@ -24,17 +23,14 @@ type HTTPError struct {
 // `fmt.Sprintf`
 func New(code int, messageArgs ...interface{}) *HTTPError {
 	var message string
-	var err error
 	status := http.StatusText(code)
 	if len(messageArgs) == 0 {
 		message = status
-		err = fmt.Errorf("[%d] %s", code, status)
 	} else {
 		fmtStr := fmt.Sprintf("%v", messageArgs[0])
 		message = fmt.Sprintf(fmtStr, messageArgs[1:]...)
-		err = fmt.Errorf("[%d] %s - %s", code, status, message)
 	}
-	return &HTTPError{err, code, status, message}
+	return &HTTPError{code, status, message}
 }
 
 // IsHTTPError returns true if the provided error is an HTTPError
